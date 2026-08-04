@@ -97,6 +97,7 @@ export type Persona = {
   id: string
   nombre: string
   role: Role
+  legajo?: string
   division?: string
   supervisor?: string
   email?: string
@@ -104,7 +105,9 @@ export type Persona = {
   orientacion?: string  // <-- Agregado para solucionar la línea 117
   curso?: string        // <-- Agregado para solucionar las líneas 134, 145, 156, 167
 }
-  
+
+export type Person = Persona
+
 export const ORIENTACIONES = [
   "Naval",
   "Informática"
@@ -116,7 +119,9 @@ export const PEOPLE: Persona[] = [
     id: t.id,
     nombre: t.nombre,
     role: "docente",
+    legajo: `LEG-${t.id}`,
     orientacion: t.orientacion,
+    division: t.orientacion,
     email: `${t.id.toLowerCase()}@escuela.edu.ar`,
     estado: "Activo"
   })),
@@ -125,6 +130,7 @@ export const PEOPLE: Persona[] = [
     id: "ADM-01",
     nombre: "Preceptor",
     role: "admin",
+    legajo: "LEG-ADM-01",
     email: "preceptoria@escuela.edu.ar",
     estado: "Activo"
   },
@@ -133,6 +139,7 @@ export const PEOPLE: Persona[] = [
     id: "A01",
     nombre: "Camila Sosa",
     role: "alumno",
+    legajo: "LEG-A01",
     curso: "6°",
     division: "Informática",
     supervisor: "Prof. García",
@@ -144,6 +151,7 @@ export const PEOPLE: Persona[] = [
     id: "A02",
     nombre: "Mateo Benítez",
     role: "alumno",
+    legajo: "LEG-A02",
     curso: "5°",
     division: "Naval",
     supervisor: "Prof. Rodríguez",
@@ -155,6 +163,7 @@ export const PEOPLE: Persona[] = [
     id: "A03",
     nombre: "Lucas Juárez",
     role: "alumno",
+    legajo: "LEG-A03",
     curso: "4°",
     division: "Informática",
     supervisor: "Prof. Martínez",
@@ -166,6 +175,7 @@ export const PEOPLE: Persona[] = [
     id: "A04",
     nombre: "Franco Martínez",
     role: "alumno",
+    legajo: "LEG-A04",
     curso: "3°",
     division: "Naval",
     supervisor: "Prof. López",
@@ -175,9 +185,45 @@ export const PEOPLE: Persona[] = [
 ]
 
 export type Equipment = Componente;
+export type EquipmentStatus = Componente["estado"];
+export type EquipmentCategory = Componente["categoria"];
 export const EQUIPMENT = initialComponents;
 
-export const HISTORY = [];
+export const CATEGORIAS: EquipmentCategory[] = [
+  "Llaves",
+  "Hardware",
+  "Componentes",
+  "Periféricos",
+  "Herramientas",
+];
+
+export const ESTADOS_EQUIPO: EquipmentStatus[] = [
+  "Operativo",
+  "En Mantenimiento",
+  "Fuera de Servicio",
+  "En Reparación",
+  "En Uso Activo",
+];
+
+/** Prefijo de ID por categoría, para autogenerar el ID de un alta de inventario. */
+export const CATEGORIA_PREFIX: Record<EquipmentCategory, string> = {
+  Llaves: "LL",
+  Hardware: "HW",
+  Componentes: "MC",
+  Periféricos: "PE",
+  Herramientas: "TL",
+};
+
+export interface HistoryEntry {
+  personId: string
+  equipo: string
+  accion: "Retiro" | "Devolución"
+  fecha: string
+  condicion: "En buen estado" | "Dañado"
+  retraso: string
+}
+
+export const HISTORY: HistoryEntry[] = [];
 
 export const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador / Preceptor",
@@ -201,6 +247,8 @@ export interface Prestamo {
   docente: string
   fechaSalida: string
   fechaDevolucionPrevista: string
+  /** Fecha real de devolución; se completa al reponer el stock. */
+  fechaDevolucion?: string
   estado: "Activo" | "Devuelto"
 }
 
@@ -235,19 +283,28 @@ export const DIVISIONES = [
 ]
 
 export const MODULOS = [
-  "08:00 - 09:00",
-  "09:00 - 10:00",
-  "10:00 - 11:00",
-  "11:00 - 12:00",
+  { id: "M1", label: "1° Módulo Mañana", rango: "07:00 - 07:40" },
+  { id: "M2", label: "2° Módulo Mañana", rango: "07:40 - 08:20" },
+  { id: "M3", label: "3° Módulo Mañana", rango: "08:20 - 09:00" },
+  { id: "M4", label: "4° Módulo Mañana", rango: "09:20 - 10:00" },
+  { id: "M5", label: "5° Módulo Mañana", rango: "10:00 - 10:40" },
+  { id: "M6", label: "6° Módulo Mañana", rango: "10:40 - 11:20" },
+  { id: "M7", label: "7° Módulo Mañana", rango: "11:20 - 12:00" },
+  { id: "T1", label: "1° Módulo Tarde", rango: "14:00 - 14:40" },
+  { id: "T2", label: "2° Módulo Tarde", rango: "14:40 - 15:20" },
+  { id: "T3", label: "3° Módulo Tarde", rango: "15:20 - 16:00" },
+  { id: "T4", label: "4° Módulo Tarde", rango: "16:20 - 17:00" },
+  { id: "T5", label: "5° Módulo Tarde", rango: "17:00 - 17:40" },
 ]
 
 
 export interface Booking {
   id: string
   dia: string
-  modulo: string
+  moduloId: string
   division: string
   docente?: string
+  actividad?: string
   fecha?: string
 }
 
@@ -267,35 +324,47 @@ export interface AuditEntry {
 export const AUDIT: AuditEntry[] = []
 
 
+export type TicketStatus =
+  | "pendiente"
+  | "proceso"
+  | "solucionado"
+
 export interface Ticket {
   id: string
-  titulo: string
-  descripcion: string
+  /** ID del artículo del inventario al que afecta el ticket. */
+  equipoId: string
+  equipo: string
+  problema: string
+  reporta: string
+  tecnico: string
+  fecha: string
   estado: TicketStatus
 }
-
-export type TicketStatus =
-  | "abierto"
-  | "pendiente"
-  | "resuelto"
-
 
 export const TICKETS: Ticket[] = []
 
 
+export type SanctionLevel = "amarilla" | "roja"
+
 export interface Sanction {
   id: string
-  nombre: string
+  alumno: string
+  legajo: string
+  nivel: SanctionLevel
   motivo: string
+  dias: number
   fecha: string
   activa: boolean
 }
 
 export const SANCTIONS: Sanction[] = []
 
-export function canLoan(component: Componente) {
+/** Un equipo se puede prestar si está técnicamente apto y queda stock. */
+export function canLoan(estado: EquipmentStatus, disponible: number) {
   return (
-    component.estado !== "Fuera de Servicio" &&
-    component.estado !== "En Reparación"
+    estado !== "Fuera de Servicio" &&
+    estado !== "En Reparación" &&
+    estado !== "En Mantenimiento" &&
+    disponible > 0
   )
 }

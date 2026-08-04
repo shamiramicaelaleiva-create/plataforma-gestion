@@ -1,17 +1,19 @@
 "use client"
 
-import { History, Mail } from "lucide-react"
+import { History, Mail, UserPlus } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { useLab } from "@/lib/lab-store"
 import {
+  DIVISIONES,
   HISTORY,
-  PEOPLE,
+  ORIENTACIONES,
   ROLE_LABELS,
+  schoolCourses,
   type Person,
   type Role,
 } from "@/lib/lab-data"
-import { Badge, Card, Modal, SectionHeader } from "../primitives"
+import { Badge, Card, Field, Input, Modal, SectionHeader, Select } from "../primitives"
 
 const ROLE_TONE: Record<Role, "indigo" | "sky" | "amber" | "neutral"> = {
   admin: "indigo",
@@ -27,23 +29,79 @@ const FILTERS: { key: Role | "all"; label: string }[] = [
 ]
 
 export function UsersModule() {
-  const { sanctions } = useLab()
+  const { role, sanctions, people: allPeople, addPerson, notify } = useLab()
+  const isAdmin = role === "admin"
+
   const [filter, setFilter] = useState<Role | "all">("all")
   const [detail, setDetail] = useState<Person | null>(null)
 
+  const [createOpen, setCreateOpen] = useState(false)
+  const [nombre, setNombre] = useState("")
+  const [newRole, setNewRole] = useState<Role>("alumno")
+  const [email, setEmail] = useState("")
+  const [curso, setCurso] = useState("")
+  const [division, setDivision] = useState("")
+  const [orientacion, setOrientacion] = useState("")
+  const [supervisor, setSupervisor] = useState("")
+
+  const docentes = allPeople.filter((p) => p.role === "docente")
+
   const people =
-    filter === "all" ? PEOPLE : PEOPLE.filter((p) => p.role === filter)
+    filter === "all" ? allPeople : allPeople.filter((p) => p.role === filter)
 
   const history = detail ? HISTORY.filter((h) => h.personId === detail.id) : []
   const personSanctions = detail
     ? sanctions.filter((s) => s.legajo === detail.legajo)
     : []
 
+  function resetForm() {
+    setNombre("")
+    setNewRole("alumno")
+    setEmail("")
+    setCurso("")
+    setDivision("")
+    setOrientacion("")
+    setSupervisor("")
+  }
+
+  function handleCreate() {
+    if (!nombre.trim()) {
+      return notify("Ingresá el nombre completo del usuario.")
+    }
+    if (newRole === "alumno" && (!curso || !division)) {
+      return notify("Para un alumno el curso y la división son obligatorios.")
+    }
+    if (newRole === "docente" && !orientacion) {
+      return notify("Para un docente la orientación es obligatoria.")
+    }
+    addPerson({
+      nombre: nombre.trim(),
+      role: newRole,
+      email: email.trim() || undefined,
+      curso: newRole === "alumno" ? curso : undefined,
+      division: newRole === "alumno" ? division : orientacion || undefined,
+      orientacion: newRole === "docente" ? orientacion : undefined,
+      supervisor: newRole === "alumno" ? supervisor || undefined : undefined,
+    })
+    setCreateOpen(false)
+    resetForm()
+  }
+
   return (
     <div className="space-y-5">
       <SectionHeader
         title="Gestión de Usuarios"
         description="Roles, perfiles y trazabilidad completa del uso del laboratorio."
+        action={
+          isAdmin ? (
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
+            >
+              <UserPlus className="size-4" /> Nuevo usuario
+            </button>
+          ) : null
+        }
       />
 
       <div className="flex flex-wrap gap-2">
@@ -186,6 +244,114 @@ export function UsersModule() {
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Alta de Usuario"
+        description="El legajo y el ID se generan automáticamente según el rol."
+      >
+        <div className="space-y-4">
+          <Field label="Nombre completo *">
+            <Input
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder="Ej: Camila Sosa"
+            />
+          </Field>
+
+          <Field label="Rol *">
+            <Select
+              value={newRole}
+              onChange={(e) => setNewRole(e.target.value as Role)}
+            >
+              <option value="alumno">Alumno</option>
+              <option value="docente">Docente</option>
+              <option value="admin">Administrador / Preceptor</option>
+            </Select>
+          </Field>
+
+          <Field
+            label="Email institucional"
+            hint="Si lo dejás vacío se genera a partir del ID."
+          >
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="nombre.apellido@escuela.edu.ar"
+            />
+          </Field>
+
+          {newRole === "alumno" && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Curso *">
+                  <Select value={curso} onChange={(e) => setCurso(e.target.value)}>
+                    <option value="">Seleccionar curso…</option>
+                    {schoolCourses.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="División *">
+                  <Select
+                    value={division}
+                    onChange={(e) => setDivision(e.target.value)}
+                  >
+                    <option value="">Seleccionar división…</option>
+                    {DIVISIONES.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </Select>
+                </Field>
+              </div>
+
+              <Field label="Docente supervisor">
+                <Select
+                  value={supervisor}
+                  onChange={(e) => setSupervisor(e.target.value)}
+                >
+                  <option value="">Sin asignar</option>
+                  {docentes.map((d) => (
+                    <option key={d.id} value={d.nombre}>{d.nombre}</option>
+                  ))}
+                </Select>
+              </Field>
+            </>
+          )}
+
+          {newRole === "docente" && (
+            <Field label="Orientación *">
+              <Select
+                value={orientacion}
+                onChange={(e) => setOrientacion(e.target.value)}
+              >
+                <option value="">Seleccionar orientación…</option>
+                {ORIENTACIONES.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+                <option value="Ciclo básico">Ciclo básico</option>
+              </Select>
+            </Field>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              onClick={() => setCreateOpen(false)}
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-accent"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleCreate}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
+            >
+              Crear usuario
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

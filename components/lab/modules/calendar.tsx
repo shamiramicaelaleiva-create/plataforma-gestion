@@ -4,24 +4,20 @@ import { Calendar, Clock, Plus, ShieldAlert } from "lucide-react"
 import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import { useLab } from "@/lib/lab-store"
-import { DIAS, DIVISIONES, MODULOS, PEOPLE } from "@/lib/lab-data"
+import { DIAS, DIVISIONES, MODULOS } from "@/lib/lab-data"
 import { Card, Field, Input, Modal, SectionHeader, Select } from "../primitives"
 
 const DIVISION_COLOR: Record<string, string> = {
-  "1ro Básico": "bg-blue-50 text-blue-700 border-blue-200",
-  "2do Básico": "bg-indigo-50 text-indigo-700 border-indigo-200",
-  "3ro Naval": "bg-amber-50 text-amber-700 border-amber-200",
-  "3ro Informática": "bg-emerald-50 text-emerald-700 border-emerald-200",
-  "4to Naval": "bg-orange-50 text-orange-700 border-orange-200",
-  "4to Informática": "bg-teal-50 text-teal-700 border-teal-200",
-  "5to Naval": "bg-rose-50 text-rose-700 border-rose-200",
-  "5to Informática": "bg-cyan-50 text-cyan-700 border-cyan-200",
-  "6to Naval": "bg-purple-50 text-purple-700 border-purple-200",
-  "6to Informática": "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200",
+  "1°A": "bg-blue-50 text-blue-700 border-blue-200",
+  "1°B": "bg-indigo-50 text-indigo-700 border-indigo-200",
+  "2°A": "bg-amber-50 text-amber-700 border-amber-200",
+  "2°B": "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "3°A": "bg-orange-50 text-orange-700 border-orange-200",
+  "3°B": "bg-teal-50 text-teal-700 border-teal-200",
 }
 
 export function CalendarModule() {
-  const { role, bookings, registerBooking, notify } = useLab()
+  const { role, people, bookings, registerBooking, notify } = useLab()
   const isAdmin = role === "admin"
 
   const [modalOpen, setModalOpen] = useState(false)
@@ -32,7 +28,7 @@ export function CalendarModule() {
   const [division, setDivision] = useState("")
   const [actividad, setActividad] = useState("")
 
-  const docentes = PEOPLE.filter((p) => p.role === "docente")
+  const docentes = people.filter((p) => p.role === "docente")
 
   const scheduleMap = useMemo(() => {
     const map: Record<string, typeof bookings[0]> = {}
