@@ -2,17 +2,17 @@
 
 import { AlertTriangle, Boxes, History, Mail, ShieldCheck } from "lucide-react"
 import { useLab } from "@/lib/lab-store"
-import { HISTORY, PEOPLE, ROLE_LABELS } from "@/lib/lab-data"
+import { HISTORY, ROLE_LABELS } from "@/lib/lab-data"
 import { Badge, Card, SanctionBadge, SectionHeader } from "../primitives"
 
 export function ProfileModule() {
-  const { currentUserId, role, sanctions, loans } = useLab()
+  const { currentUserId, role, sanctions, loans, people } = useLab()
   
   // Solucionamos la catarata de errores usando un casteo seguro como any para desarrollo ágil de los mocks
-  let me = PEOPLE.find((p) => p.id === currentUserId) as any
+  let me = people.find((p) => p.id === currentUserId) as any
   
   if (!me || me.role !== role) {
-    const fallback = PEOPLE.find((p) => p.role === role);
+    const fallback = people.find((p) => p.role === role);
     me = fallback ? (fallback as any) : {
       id: currentUserId,
       nombre: role === "admin" ? "Administrador General" : role === "docente" ? "Docente de Laboratorio" : "Alumno Técnico",

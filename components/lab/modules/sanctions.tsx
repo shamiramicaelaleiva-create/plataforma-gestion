@@ -2,13 +2,12 @@
 
 import { ShieldAlert, ShieldCheck, Unlock } from "lucide-react"
 import { useLab } from "@/lib/lab-store"
-import { PEOPLE } from "@/lib/lab-data"
 import { Card, SanctionBadge, SectionHeader } from "../primitives"
 
 export function SanctionsModule() {
-  const { role, sanctions, currentUserId, liftSanction } = useLab()
+  const { role, sanctions, people, currentUserId, liftSanction } = useLab()
   const isAdmin = role === "admin"
-  const me = PEOPLE.find((p) => p.id === currentUserId)
+  const me = people.find((p) => p.id === currentUserId)
 
   // Alumno only sees own sanctions
   const visible =

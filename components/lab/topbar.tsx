@@ -4,7 +4,7 @@ import { ChevronDown, Menu, ShieldCheck, UserCog } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { useLab } from "@/lib/lab-store"
-import { PEOPLE, ROLE_LABELS, type Role } from "@/lib/lab-data"
+import { ROLE_LABELS, type Role } from "@/lib/lab-data"
 
 const ROLE_ORDER: Role[] = ["admin", "docente", "alumno"]
 
@@ -22,10 +22,10 @@ const ROLE_DEFAULT_USER: Record<Role, string> = {
 }
 
 export function Topbar({ onMenu }: { onMenu: () => void }) {
-  const { role, setRole, currentUserId, setCurrentUserId } = useLab()
+  const { role, setRole, currentUserId, setCurrentUserId, people } = useLab()
   const [open, setOpen] = useState(false)
-  
-  const person = PEOPLE.find((p) => p.id === currentUserId) || {
+
+  const person = people.find((p) => p.id === currentUserId) || {
     nombre: role === "admin" ? "Administrador General" : role === "docente" ? "Profesor Laboratorio" : "Alumno Técnico"
   }
 

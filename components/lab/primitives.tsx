@@ -53,12 +53,11 @@ export function SectionHeader({
 }
 
 const STATUS_STYLES: Record<EquipmentStatus, string> = {
-  operativo: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-  mantenimiento: "bg-amber-50 text-amber-700 ring-amber-600/20",
-  fuera_servicio: "bg-red-50 text-red-700 ring-red-600/20",
-  reparacion: "bg-orange-50 text-orange-700 ring-orange-600/20",
-  reservado: "bg-indigo-50 text-indigo-700 ring-indigo-600/20",
-  en_uso: "bg-sky-50 text-sky-700 ring-sky-600/20",
+  "Operativo": "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+  "En Mantenimiento": "bg-amber-50 text-amber-700 ring-amber-600/20",
+  "Fuera de Servicio": "bg-red-50 text-red-700 ring-red-600/20",
+  "En Reparación": "bg-orange-50 text-orange-700 ring-orange-600/20",
+  "En Uso Activo": "bg-sky-50 text-sky-700 ring-sky-600/20",
 }
 
 export function StatusBadge({ status }: { status: EquipmentStatus }) {

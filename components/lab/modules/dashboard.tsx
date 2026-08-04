@@ -12,24 +12,8 @@ import {
 } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useLab } from "@/lib/lab-store"
-import { canLoan, PEOPLE, type Equipment } from "@/lib/lab-data"
+import { canLoan, DIAS, MODULOS, type Equipment } from "@/lib/lab-data"
 import { Badge, Card, Field, Input, Select, StatusBadge } from "../primitives"
-
-const MODULOS_HORARIOS = [
-  { id: "M1", label: "1° Módulo Mañana (07:00 - 07:40)" },
-  { id: "M2", label: "2° Módulo Mañana (07:40 - 08:20)" },
-  { id: "M3", label: "3° Módulo Mañana (08:20 - 09:00)" },
-  { id: "M4", label: "4° Módulo Mañana (09:20 - 10:00)" },
-  { id: "M5", label: "5° Módulo Mañana (10:00 - 10:40)" },
-  { id: "M6", label: "6° Módulo Mañana (10:40 - 11:20)" },
-  { id: "M7", label: "7° Módulo Mañana (11:20 - 12:00)" },
-  { id: "T1", label: "1° Módulo Tarde (14:00 - 14:40)" },
-  { id: "T2", label: "2° Módulo Tarde (14:40 - 15:20)" },
-  { id: "T3", label: "3° Módulo Tarde (15:20 - 16:00)" },
-  { id: "T4", label: "4° Módulo Tarde (16:20 - 17:00)" },
-  { id: "T5", label: "5° Módulo Tarde (17:00 - 17:40)" },
-  { id: "T6", label: "6° Módulo Tarde (17:40 - 18:20)" }
-]
 
 function Stat({
   icon: Icon,
@@ -58,7 +42,7 @@ function Stat({
 }
 
 export function DashboardModule() {
-  const { role, equipment, loans, sanctions, registerLoan, notify } = useLab()
+  const { role, equipment, people, loans, sanctions, registerLoan, notify } = useLab()
   const isAdmin = role === "admin"
 
   const [query, setQuery] = useState("")
@@ -68,8 +52,8 @@ export function DashboardModule() {
   const [dia, setDia] = useState("")
   const [modulo, setModulo] = useState("")
 
-  const alumnos = PEOPLE.filter((p) => p.role === "alumno")
-  const docentes = PEOPLE.filter((p) => p.role === "docente")
+  const alumnos = people.filter((p) => p.role === "alumno")
+  const docentes = people.filter((p) => p.role === "docente")
 
   const suggestions = useMemo(() => {
     if (!query.trim()) return []
@@ -178,20 +162,22 @@ export function DashboardModule() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Día / Días">
-                <Input 
-                  type="text" 
-                  placeholder="Ej: Lunes, 12 de Mayo" 
-                  value={dia} 
-                  onChange={(e) => setDia(e.target.value)} 
-                />
+              <Field label="Día">
+                <Select value={dia} onChange={(e) => setDia(e.target.value)}>
+                  <option value="">Seleccionar día…</option>
+                  {DIAS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </Select>
               </Field>
 
               <Field label="Módulo Horario">
                 <Select value={modulo} onChange={(e) => setModulo(e.target.value)}>
                   <option value="">Seleccionar bloque…</option>
-                  {MODULOS_HORARIOS.map((m) => (
-                    <option key={m.id} value={m.label}>{m.label}</option>
+                  {MODULOS.map((m) => (
+                    <option key={m.id} value={`${m.label} (${m.rango})`}>
+                      {m.label} ({m.rango})
+                    </option>
                   ))}
                 </Select>
               </Field>
@@ -283,6 +269,11 @@ export function DashboardModule() {
 
       <Card className="p-5">
         <h3 className="text-sm font-semibold text-foreground">Registro Reciente de Salidas / Préstamos Activos</h3>
+        {loans.filter((l) => l.estado.toLowerCase() === "activo").length === 0 && (
+          <p className="mt-3 rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+            No hay préstamos activos. Las salidas que registres aparecen acá.
+          </p>
+        )}
         <div className="mt-3 divide-y divide-border">
           {loans
             .filter((l) => l.estado.toLowerCase() === "activo")
