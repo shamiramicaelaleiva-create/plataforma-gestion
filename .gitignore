@@ -7,7 +7,14 @@ __v0_jsx-dev-runtime.ts
 .vercel/
 
 # Environment variables
-.env*.local
+# .env* cubre .env, .env.local, .env.production, etc.
+# La excepción deja versionado el ejemplo sin credenciales.
+.env
+.env*
+!.env.example
+
+# Build artifacts
+tsconfig.tsbuildinfo
 
 # Common ignores
 node_modules
