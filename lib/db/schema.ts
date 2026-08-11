@@ -34,7 +34,17 @@ export const equipmentStatusEnum = pgEnum("equipment_status", [
   "En Uso Activo",
 ])
 
-export const personStatusEnum = pgEnum("person_status", ["Activo", "Inactivo"])
+/**
+ * "Pendiente" es una persona que se registró sola desde /registro y todavía no
+ * fue aprobada por preceptoría. Tiene cuenta de Supabase Auth y fila acá, pero
+ * `getSessionUser` le niega el acceso hasta que un admin le asigne rol real y
+ * la pase a "Activo". El rol que lleva mientras tanto es provisorio y no se usa.
+ */
+export const personStatusEnum = pgEnum("person_status", [
+  "Activo",
+  "Inactivo",
+  "Pendiente",
+])
 
 export const loanStatusEnum = pgEnum("loan_status", ["Activo", "Devuelto"])
 

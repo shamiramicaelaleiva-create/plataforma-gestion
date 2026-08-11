@@ -152,6 +152,9 @@ psql "$DIRECT_URL" -v ON_ERROR_STOP=1 -f drizzle/0000_init.sql
 
 # 2) Constraints de integridad + RLS y revocación de permisos a anon/authenticated
 psql "$DIRECT_URL" -v ON_ERROR_STOP=1 -f drizzle/0001_constraints_rls.sql
+
+# 3) Estado "Pendiente" para el autorregistro con aprobación
+psql "$DIRECT_URL" -v ON_ERROR_STOP=1 -f drizzle/0002_registro_pendiente.sql
 ```
 
 `-v ON_ERROR_STOP=1` corta al primer error en vez de seguir y dejar el esquema a medias.
@@ -230,11 +233,22 @@ Notas:
 Supabase → **Authentication → Sign In / Providers**:
 
 - **Email**: habilitado.
-- **Confirm email**: decidí. Para un colegio con pocos usuarios creados a mano
-  conviene **desactivarlo** (el admin crea las cuentas y reparte la contraseña).
-  Si lo dejás activo, cada usuario nuevo tiene que confirmar por mail antes de poder
-  entrar.
+- **Confirm email**: **desactivalo**. Con el autorregistro activo (`/registro`)
+  ya hay un control humano: preceptoría aprueba cada solicitud antes de que la
+  persona pueda entrar. La confirmación por mail agrega una segunda barrera que
+  no protege más y sí rompe: el SMTP que trae Supabase por defecto está limitado
+  a unos pocos mails por hora, así que si se registra un curso entero la mayoría
+  no recibe nada y quedan trabados. Si querés confirmación por mail, primero
+  configurá un SMTP propio.
+- **Enable sign-ups**: tiene que quedar **habilitado**. Si lo apagás, `/registro`
+  deja de funcionar. Apagalo solo si querés desactivar el autorregistro y volver
+  a crear todas las cuentas a mano.
 - Los proveedores sociales quedan deshabilitados.
+
+> El autorregistro no da acceso por sí solo. Quien se registra queda en estado
+> `Pendiente`: tiene cuenta pero el sistema le niega la entrada hasta que un
+> administrador le asigna un rol desde **Gestión de Usuarios → Solicitudes de
+> acceso pendientes**. El rol nunca lo elige el que se registra.
 
 ### 5.2 Site URL y Redirect URLs
 
@@ -393,5 +407,6 @@ Corré esto contra la URL de producción, en orden. Si alguno falla, andá a la 
 | `lib/db/schema.ts` | Esquema de tablas. |
 | `drizzle/0000_init.sql` | Tablas, enums, índices. |
 | `drizzle/0001_constraints_rls.sql` | Constraints de integridad, RLS y revoke a `anon`/`authenticated`. |
+| `drizzle/0002_registro_pendiente.sql` | Estado `Pendiente` para el autorregistro con aprobación. |
 | `scripts/seed.ts` | Datos iniciales. `npm run db:seed`. Usa `DIRECT_URL`. |
 | `lib/supabase/` | Clientes de Supabase Auth (browser, server, middleware). |

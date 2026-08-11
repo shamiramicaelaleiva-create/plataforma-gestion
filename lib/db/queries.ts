@@ -1,6 +1,8 @@
 import "server-only"
 
-import { desc, eq } from "drizzle-orm"
+import { desc, eq, ne } from "drizzle-orm"
+
+import type { Role } from "@/lib/lab-data"
 
 import { db } from "./client"
 import {
@@ -24,8 +26,28 @@ export async function getEquipment() {
   return rows.map(toEquipment)
 }
 
+/**
+ * Personas del padrón. Excluye las pendientes de aprobación a propósito: si
+ * aparecieran acá se colarían en el listado de usuarios y, peor, en los combos
+ * que eligen alumno y docente para un préstamo. Alguien que todavía no fue
+ * aceptado no puede figurar como responsable de un equipo.
+ */
 export async function getPeople() {
-  const rows = await db.select().from(s.people).orderBy(s.people.id)
+  const rows = await db
+    .select()
+    .from(s.people)
+    .where(ne(s.people.estado, "Pendiente"))
+    .orderBy(s.people.id)
+  return rows.map(toPersona)
+}
+
+/** Bandeja de solicitudes de autorregistro. Las más viejas primero: son las que llevan más tiempo esperando. */
+export async function getPendingPeople() {
+  const rows = await db
+    .select()
+    .from(s.people)
+    .where(eq(s.people.estado, "Pendiente"))
+    .orderBy(s.people.createdAt)
   return rows.map(toPersona)
 }
 
@@ -77,20 +99,46 @@ export async function getPersonByAuthUserId(authUserId: string) {
   return row ? toPersona(row) : null
 }
 
-/** Snapshot completo para hidratar el store en el primer render. */
-export async function getLabSnapshot() {
-  const [equipment, people, loans, bookings, tickets, sanctions, audit] =
-    await Promise.all([
-      getEquipment(),
-      getPeople(),
-      getLoans(),
-      getBookings(),
-      getTickets(),
-      getSanctions(),
-      getAudit(),
-    ])
+/**
+ * Snapshot completo para hidratar el store en el primer render.
+ *
+ * Recibe el rol porque no todo se le manda a todos. Las solicitudes de acceso
+ * llevan nombre y email de gente que todavía no fue aceptada; si viajaran en el
+ * snapshot de cualquier alumno estarían en el HTML de su navegador, aunque la
+ * pantalla que las muestra esté oculta. Esconder un módulo en el cliente no es
+ * ocultar el dato: lo que no se manda es lo único que no se puede leer.
+ */
+export async function getLabSnapshot(role: Role) {
+  const [
+    equipment,
+    people,
+    solicitudes,
+    loans,
+    bookings,
+    tickets,
+    sanctions,
+    audit,
+  ] = await Promise.all([
+    getEquipment(),
+    getPeople(),
+    role === "admin" ? getPendingPeople() : Promise.resolve([]),
+    getLoans(),
+    getBookings(),
+    getTickets(),
+    getSanctions(),
+    getAudit(),
+  ])
 
-  return { equipment, people, loans, bookings, tickets, sanctions, audit }
+  return {
+    equipment,
+    people,
+    solicitudes,
+    loans,
+    bookings,
+    tickets,
+    sanctions,
+    audit,
+  }
 }
 
 export type LabSnapshot = Awaited<ReturnType<typeof getLabSnapshot>>

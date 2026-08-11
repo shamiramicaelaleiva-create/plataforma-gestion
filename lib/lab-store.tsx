@@ -18,7 +18,11 @@ import {
   updateStockAction,
 } from "@/app/actions/inventory"
 import { registerLoanAction, returnLoanAction } from "@/app/actions/loans"
-import { addPersonAction } from "@/app/actions/people"
+import {
+  addPersonAction,
+  approvePersonAction,
+  rejectPersonAction,
+} from "@/app/actions/people"
 import {
   createSanctionAction,
   liftSanctionAction,
@@ -63,6 +67,8 @@ interface LabContextValue {
 
   equipment: Equipment[]
   people: Persona[]
+  /** Solicitudes de autorregistro esperando aprobación. Solo las ve el admin. */
+  solicitudes: Persona[]
   bookings: Booking[]
   loans: Loan[]
   sanctions: Sanction[]
@@ -89,6 +95,15 @@ interface LabContextValue {
     orientacion?: string
     supervisor?: string
   }) => void
+  approvePerson: (input: {
+    personId: string
+    role: Role
+    curso?: string
+    division?: string
+    orientacion?: string
+    supervisor?: string
+  }) => void
+  rejectPerson: (personId: string) => void
   registerLoan: (input: {
     equipoId: string
     alumno: string
@@ -178,6 +193,7 @@ export function LabProvider({
 
       equipment: snapshot.equipment,
       people: snapshot.people,
+      solicitudes: snapshot.solicitudes,
       bookings: snapshot.bookings,
       loans: snapshot.loans,
       sanctions: snapshot.sanctions,
@@ -190,6 +206,8 @@ export function LabProvider({
 
       addEquipment: (input) => run(() => addEquipmentAction(input)),
       addPerson: (input) => run(() => addPersonAction(input)),
+      approvePerson: (input) => run(() => approvePersonAction(input)),
+      rejectPerson: (personId) => run(() => rejectPersonAction(personId)),
       registerLoan: (input) => run(() => registerLoanAction(input)),
       returnLoan: (loanId) => run(() => returnLoanAction(loanId)),
       registerBooking: (b) =>

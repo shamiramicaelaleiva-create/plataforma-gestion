@@ -4,7 +4,11 @@ import { updateSession } from "@/lib/supabase/middleware"
 
 /** Rutas accesibles sin sesión. */
 function esRutaPublica(pathname: string) {
-  return pathname === "/login" || pathname.startsWith("/auth")
+  return (
+    pathname === "/login" ||
+    pathname === "/registro" ||
+    pathname.startsWith("/auth")
+  )
 }
 
 export async function middleware(request: NextRequest) {
@@ -19,8 +23,10 @@ export async function middleware(request: NextRequest) {
     return copiarCookies(supabaseResponse, NextResponse.redirect(url))
   }
 
-  // Con sesión y pidiendo /login -> al inicio.
-  if (user && pathname === "/login") {
+  // Con sesión y pidiendo /login o /registro -> al inicio. Quien ya tiene
+  // cuenta no vuelve a pedirla; si está pendiente de aprobación, el inicio le
+  // muestra esa pantalla.
+  if (user && (pathname === "/login" || pathname === "/registro")) {
     const url = request.nextUrl.clone()
     url.pathname = "/"
     url.search = ""

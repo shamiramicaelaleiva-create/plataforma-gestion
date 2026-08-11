@@ -64,8 +64,11 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   // No se le asume ningún rol: sin fila, sin acceso.
   if (!persona || !persona.authUserId) return null
 
-  // Persona dada de baja: la sesión puede seguir viva, el acceso no.
-  if (persona.estado === "Inactivo") return null
+  // Solo "Activo" habilita. Se compara contra la lista blanca y no contra
+  // "Inactivo": si mañana se agrega otro estado (suspendido, egresado), el
+  // default seguro es negar, no conceder por omisión. "Pendiente" — el que deja
+  // el autorregistro — cae acá y no entra hasta que un admin lo apruebe.
+  if (persona.estado !== "Activo") return null
 
   return {
     id: persona.id,
@@ -74,6 +77,64 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     role: persona.role,
     legajo: persona.legajo,
     email: persona.email,
+  }
+})
+
+/**
+ * Por qué esto existe además de getSessionUser:
+ *
+ * getSessionUser devuelve null para tres situaciones distintas — sin sesión,
+ * sin fila en `people`, y con fila pero no habilitada. La página de inicio no
+ * puede tratarlas igual: mandar a /login a alguien que YA está logueado lo deja
+ * en un rebote infinito, porque el middleware lo devuelve al inicio apenas pisa
+ * /login. Necesita saber cuál de los tres casos es para mostrar la pantalla que
+ * corresponde.
+ *
+ * "huerfano" es una cuenta de Auth sin fila en people. No debería pasar, pero
+ * puede: si el registro creó el usuario en Supabase y falló el INSERT posterior.
+ * Se lo trata como pendiente en la UI, con un mensaje que pide contactar a
+ * preceptoría, en vez de dejarlo colgado.
+ */
+export type AccountState =
+  | { kind: "sin-sesion" }
+  | { kind: "activo"; user: SessionUser }
+  | { kind: "pendiente"; nombre: string; email: string | null }
+  | { kind: "inactivo" }
+  | { kind: "huerfano"; email: string | null }
+
+export const getAccountState = cache(async (): Promise<AccountState> => {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
+
+  if (error || !user) return { kind: "sin-sesion" }
+
+  const [persona] = await db
+    .select()
+    .from(people)
+    .where(eq(people.authUserId, user.id))
+    .limit(1)
+
+  if (!persona) return { kind: "huerfano", email: user.email ?? null }
+  if (persona.estado === "Pendiente") {
+    return { kind: "pendiente", nombre: persona.nombre, email: persona.email }
+  }
+  if (persona.estado === "Inactivo") return { kind: "inactivo" }
+
+  return {
+    kind: "activo",
+    user: {
+      id: persona.id,
+      // El NOT NULL lo garantiza el WHERE: se filtró por authUserId.
+      authUserId: persona.authUserId!,
+      nombre: persona.nombre,
+      role: persona.role,
+      legajo: persona.legajo,
+      email: persona.email,
+    },
   }
 })
 

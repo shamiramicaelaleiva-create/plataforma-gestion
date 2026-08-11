@@ -1,5 +1,6 @@
 "use server"
 
+import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 import { requireRole } from "@/lib/auth"
@@ -73,6 +74,117 @@ export async function addPersonAction(input: {
 
       revalidatePath("/")
       return ok(`Usuario ${nombre} creado con legajo LEG-${id}`)
+    })
+  })
+}
+
+/**
+ * Aprueba una solicitud de autorregistro. Solo admin.
+ *
+ * Es el único punto donde una persona pasa de "Pendiente" a "Activo", y donde
+ * se le asigna el rol. El rol lo elige el administrador acá y en ningún otro
+ * lado: el que se registró guardó "alumno" provisorio y no tuvo voz en esto.
+ *
+ * Además se le reescribe el id y el legajo. Al registrarse recibió un id de
+ * solicitud ("SOL-04") porque todavía no se sabía qué era; aprobada, pasa a la
+ * numeración que usa la escuela según el rol ("A-12", "P-07"). Cambiar la clave
+ * primaria es seguro en este caso concreto: ninguna tabla referencia people.id
+ * — préstamos, sanciones y auditoría guardan nombre o legajo como texto.
+ */
+export async function approvePersonAction(input: {
+  personId: string
+  role: Role
+  curso?: string
+  division?: string
+  orientacion?: string
+  supervisor?: string
+}) {
+  return guard("approvePerson", async () => {
+    const actor = await requireRole("admin")
+
+    if (!["admin", "docente", "alumno"].includes(input.role)) {
+      return fail("Rol inválido.")
+    }
+
+    return db.transaction(async (tx) => {
+      // Se bloquea la fila: dos administradores mirando la misma bandeja
+      // podrían aprobar la misma solicitud a la vez y consumir dos ids.
+      const [solicitud] = await tx
+        .select()
+        .from(s.people)
+        .where(eq(s.people.id, input.personId))
+        .for("update")
+        .limit(1)
+
+      if (!solicitud) return fail("La solicitud no existe.")
+      if (solicitud.estado !== "Pendiente") {
+        return fail(
+          `La solicitud de ${solicitud.nombre} ya fue resuelta por otro administrador.`,
+        )
+      }
+
+      const nuevoId = await nextId(tx, ROLE_PREFIX[input.role])
+
+      await tx
+        .update(s.people)
+        .set({
+          id: nuevoId,
+          legajo: `LEG-${nuevoId}`,
+          role: input.role,
+          estado: "Activo",
+          curso: input.curso?.trim() || null,
+          division: input.division?.trim() || null,
+          orientacion: input.orientacion?.trim() || null,
+          supervisor: input.supervisor?.trim() || null,
+        })
+        .where(eq(s.people.id, input.personId))
+
+      await writeAudit(tx, actor, {
+        accion: `Aprobó la solicitud de acceso de ${solicitud.nombre}`,
+        anterior: `${input.personId} (Pendiente)`,
+        siguiente: `${nuevoId} (${input.role}, Activo)`,
+      })
+
+      revalidatePath("/")
+      return ok(
+        `${solicitud.nombre} fue aprobado como ${input.role}. Legajo LEG-${nuevoId}.`,
+      )
+    })
+  })
+}
+
+/**
+ * Rechaza una solicitud. Solo admin.
+ *
+ * No borra nada: deja la fila en "Inactivo". La cuenta de Supabase Auth sigue
+ * existiendo — borrarla requiere la service_role key, que a propósito no está
+ * en la app —, así que la persona va a poder loguearse. Con la fila en
+ * "Inactivo", getSessionUser le niega el acceso igual. Si se borrara la fila,
+ * esa misma cuenta quedaría huérfana y podría volver a registrarse en loop.
+ */
+export async function rejectPersonAction(personId: string) {
+  return guard("rejectPerson", async () => {
+    const actor = await requireRole("admin")
+
+    return db.transaction(async (tx) => {
+      const actualizado = await tx
+        .update(s.people)
+        .set({ estado: "Inactivo" })
+        .where(and(eq(s.people.id, personId), eq(s.people.estado, "Pendiente")))
+        .returning({ nombre: s.people.nombre })
+
+      if (actualizado.length === 0) {
+        return fail("Esa solicitud ya fue resuelta.")
+      }
+
+      await writeAudit(tx, actor, {
+        accion: `Rechazó la solicitud de acceso de ${actualizado[0].nombre}`,
+        anterior: `${personId} (Pendiente)`,
+        siguiente: `${personId} (Inactivo)`,
+      })
+
+      revalidatePath("/")
+      return ok(`Solicitud de ${actualizado[0].nombre} rechazada.`)
     })
   })
 }

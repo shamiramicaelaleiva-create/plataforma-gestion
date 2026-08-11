@@ -101,7 +101,7 @@ export type Persona = {
   division?: string
   supervisor?: string
   email?: string
-  estado?: "Activo" | "Inactivo"
+  estado?: "Activo" | "Inactivo" | "Pendiente"
   orientacion?: string  // <-- Agregado para solucionar la línea 117
   curso?: string        // <-- Agregado para solucionar las líneas 134, 145, 156, 167
 }

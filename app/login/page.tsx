@@ -1,6 +1,7 @@
 "use client"
 
 import { FlaskConical, LoaderCircle, LockKeyhole } from "lucide-react"
+import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Suspense, useActionState } from "react"
 
@@ -41,7 +42,7 @@ function LoginForm() {
         </span>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            SIGLAB
+            IPESMIgest
           </h1>
           <p className="mt-1 text-sm text-muted-foreground text-pretty">
             Gestión de Laboratorio Técnico
@@ -55,7 +56,7 @@ function LoginForm() {
             Iniciar sesión
           </h2>
           <p className="mt-1 text-sm text-muted-foreground text-pretty">
-            Usá la cuenta institucional que te asignó la preceptoría.
+            Usá tu cuenta institucional. Si no tenés, podés solicitar acceso.
           </p>
         </div>
 
@@ -106,6 +107,16 @@ function LoginForm() {
             )}
           </button>
         </form>
+
+        <div className="mt-5 border-t border-border pt-4 text-center text-sm">
+          <span className="text-muted-foreground">¿No tenés cuenta? </span>
+          <Link
+            href="/registro"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Solicitar acceso
+          </Link>
+        </div>
       </Card>
 
       <p className="mt-5 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
