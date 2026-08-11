@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Suspense, useActionState } from "react"
 
-import { Card, Field, Input } from "@/components/lab/primitives"
+import { Card, Field, Input, PasswordInput } from "@/components/lab/primitives"
 import { login, type LoginState } from "./actions"
 
 const estadoInicial: LoginState = { error: null }
@@ -73,8 +73,7 @@ function LoginForm() {
           </Field>
 
           <Field label="Contraseña">
-            <Input
-              type="password"
+            <PasswordInput
               name="password"
               autoComplete="current-password"
               placeholder="••••••••"

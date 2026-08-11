@@ -1,8 +1,8 @@
 "use client"
 
-import { X } from "lucide-react"
+import { Eye, EyeOff, X } from "lucide-react"
 import type { ReactNode } from "react"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import type { EquipmentStatus, SanctionLevel, TicketStatus } from "@/lib/lab-data"
 import { STATUS_LABELS } from "@/lib/lab-data"
@@ -168,6 +168,44 @@ const inputBase =
 
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={cn(inputBase, props.className)} />
+}
+
+/**
+ * Campo de contraseña con botón de ver/ocultar.
+ *
+ * El botón alterna el `type` del input entre "password" y "text". No hay nada
+ * más: el valor siempre estuvo en el DOM, mostrarlo no lo expone a nadie que no
+ * lo tuviera ya. Lo que evita es el caso real de todos los días — escribir mal
+ * la contraseña a ciegas y no poder distinguir eso de una cuenta que no anda.
+ *
+ * `tabIndex={-1}` saca al botón del recorrido del tabulador: quien navega con
+ * teclado va del campo al submit, no a un control decorativo en el medio.
+ */
+export function PasswordInput(
+  props: Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">,
+) {
+  const [visible, setVisible] = useState(false)
+
+  return (
+    <div className="relative">
+      <input
+        {...props}
+        type={visible ? "text" : "password"}
+        className={cn(inputBase, "pr-10", props.className)}
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+        title={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground transition hover:text-foreground disabled:opacity-50"
+        disabled={props.disabled}
+      >
+        {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+      </button>
+    </div>
+  )
 }
 
 export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {

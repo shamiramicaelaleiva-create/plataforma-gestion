@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useActionState } from "react"
 
 import { registerAction, type RegisterState } from "@/app/actions/register"
-import { Card, Field, Input } from "@/components/lab/primitives"
+import { Card, Field, Input, PasswordInput } from "@/components/lab/primitives"
 
 const estadoInicial: RegisterState = { error: null, done: false }
 
@@ -75,8 +75,7 @@ export default function RegistroPage() {
             </Field>
 
             <Field label="Contraseña" hint="Mínimo 8 caracteres.">
-              <Input
-                type="password"
+              <PasswordInput
                 name="password"
                 autoComplete="new-password"
                 placeholder="••••••••"
@@ -87,8 +86,7 @@ export default function RegistroPage() {
             </Field>
 
             <Field label="Repetir contraseña">
-              <Input
-                type="password"
+              <PasswordInput
                 name="password2"
                 autoComplete="new-password"
                 placeholder="••••••••"
