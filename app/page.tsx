@@ -1,34 +1,29 @@
-import { redirect } from "next/navigation"
-
-import { CuentaNoHabilitada } from "@/components/lab/cuenta-no-habilitada"
 import { LabShell } from "@/components/lab/lab-shell"
 import { getAccountState } from "@/lib/auth"
-import { DEMO_MODE } from "@/lib/demo"
 import { getLabSnapshot } from "@/lib/db/queries"
 import { LabProvider } from "@/lib/lab-store"
 
 /**
- * Los datos se leen en el servidor y bajan como props. El middleware ya bloquea
- * a los no autenticados, pero la comprobación se repite acá: el middleware
- * protege rutas, no datos, y esta página lee la base. Que una sola capa decida
- * quién ve el inventario es un punto único de falla.
+ * Los datos se leen en el servidor y bajan como props.
  *
- * Los tres estados que no habilitan no se pueden resolver mandando a /login:
- * el usuario ya tiene sesión, así que el middleware lo devolvería acá y quedaría
- * rebotando. Cada uno tiene su pantalla, con salida.
+ * La app no tiene login: el actor lo resuelve `getAccountState` tomando un
+ * admin de `people`. Si no hay ninguno la base está sin sembrar, y eso se avisa
+ * en vez de renderizar un shell vacío que parecería un bug de la UI.
  */
 export default async function Page() {
   const estado = await getAccountState()
 
-  if (estado.kind === "sin-sesion") redirect("/login")
-  if (estado.kind === "pendiente") {
-    return <CuentaNoHabilitada variante="pendiente" nombre={estado.nombre} />
-  }
-  if (estado.kind === "inactivo") {
-    return <CuentaNoHabilitada variante="inactivo" />
-  }
-  if (estado.kind === "huerfano") {
-    return <CuentaNoHabilitada variante="huerfano" />
+  if (estado.kind === "sin-admin") {
+    return (
+      <main className="mx-auto flex min-h-svh max-w-md flex-col justify-center gap-3 px-6">
+        <h1 className="text-lg font-semibold">Base de datos sin datos</h1>
+        <p className="text-sm text-muted-foreground">
+          No hay ninguna persona con rol <code>admin</code> y estado{" "}
+          <code>Activo</code> en la tabla <code>people</code>. Sembrá la base con{" "}
+          <code>npm run db:seed</code> y recargá.
+        </p>
+      </main>
+    )
   }
 
   const { user } = estado
@@ -43,7 +38,6 @@ export default async function Page() {
         legajo: user.legajo,
       }}
       snapshot={snapshot}
-      demoMode={DEMO_MODE}
     >
       <LabShell />
     </LabProvider>

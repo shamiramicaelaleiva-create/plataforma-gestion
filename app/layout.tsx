@@ -33,12 +33,12 @@ export const metadata: Metadata = {
   },
 }
 
+// La app tiene un solo tema, claro. Declararlo acá evita que el navegador
+// pinte de oscuro los controles nativos (scrollbars, selects, autofill) cuando
+// el sistema operativo está en modo oscuro.
 export const viewport: Viewport = {
-  colorScheme: 'light dark',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
-  ],
+  colorScheme: 'light',
+  themeColor: '#f7faf8',
 }
 
 export default function RootLayout({

@@ -85,7 +85,7 @@ export function Badge({
 }) {
   const tones = {
     neutral: "bg-secondary text-secondary-foreground ring-border",
-    indigo: "bg-indigo-50 text-indigo-700 ring-indigo-600/20",
+    indigo: "bg-accent text-accent-foreground ring-primary/20",
     green: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
     amber: "bg-amber-50 text-amber-700 ring-amber-600/20",
     red: "bg-red-50 text-red-700 ring-red-600/20",
@@ -242,7 +242,7 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden
       />

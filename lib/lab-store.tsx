@@ -12,7 +12,6 @@ import {
 } from "react"
 
 import { registerBookingAction } from "@/app/actions/bookings"
-import { setDemoRoleAction } from "@/app/actions/demo"
 import {
   addEquipmentAction,
   updateEquipmentStatusAction,
@@ -63,17 +62,6 @@ export interface SessionInfo {
 interface LabContextValue {
   /** Rol real de la sesión, leído del servidor. Ya no es un estado del cliente. */
   role: Role
-  /**
-   * true mientras el login está puenteado (ver lib/demo.ts). Baja del servidor
-   * como prop: un componente de cliente que importe DEMO_MODE directo lee false.
-   */
-  demoMode: boolean
-  /**
-   * Cambia el rol con el que se muestra la demo. El servidor es el que decide:
-   * esto escribe una cookie httpOnly y el rol se vuelve a leer allá, así que no
-   * es el cliente el que se autoasigna permisos.
-   */
-  setDemoRole: (role: Role) => void
   currentUserId: string
   session: SessionInfo
 
@@ -163,12 +151,10 @@ let toastSeq = 0
 export function LabProvider({
   session,
   snapshot,
-  demoMode,
   children,
 }: {
   session: SessionInfo
   snapshot: LabSnapshot
-  demoMode: boolean
   children: ReactNode
 }) {
   const router = useRouter()
@@ -204,8 +190,6 @@ export function LabProvider({
       role: session.role,
       currentUserId: session.id,
       session,
-      demoMode,
-      setDemoRole: (role) => run(() => setDemoRoleAction(role)),
 
       equipment: snapshot.equipment,
       people: snapshot.people,
@@ -247,7 +231,7 @@ export function LabProvider({
       createSanction: (input) => run(() => createSanctionAction(input)),
       liftSanction: (id) => run(() => liftSanctionAction(id)),
     }),
-    [session, snapshot, demoMode, pending, toasts, notify, run],
+    [session, snapshot, pending, toasts, notify, run],
   )
 
   return <LabContext.Provider value={value}>{children}</LabContext.Provider>

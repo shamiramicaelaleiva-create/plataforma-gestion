@@ -5,6 +5,7 @@ import { desc, eq, ne } from "drizzle-orm"
 import type { Role } from "@/lib/lab-data"
 
 import { db } from "./client"
+import { esErrorDeConexion, mockForzado, mockSnapshot } from "./mock"
 import {
   toAuditEntry,
   toBooking,
@@ -109,6 +110,24 @@ export async function getPersonByAuthUserId(authUserId: string) {
  * ocultar el dato: lo que no se manda es lo único que no se puede leer.
  */
 export async function getLabSnapshot(role: Role) {
+  if (mockForzado()) return mockSnapshot(role)
+
+  try {
+    return await leerSnapshot(role)
+  } catch (error) {
+    // Sin base no se puede mostrar nada, y una pantalla de error deja la app
+    // inservible para trabajar en la UI. Se cae a los datos de demo, pero
+    // ruidosamente: en el log queda claro que lo que se ve no es la base.
+    if (!esErrorDeConexion(error)) throw error
+    console.warn(
+      "[lab] Sin conexión a Postgres. Sirviendo datos de demostración.",
+      error,
+    )
+    return mockSnapshot(role)
+  }
+}
+
+async function leerSnapshot(role: Role) {
   const [
     equipment,
     people,

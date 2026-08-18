@@ -101,7 +101,7 @@ export function DashboardModule() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat icon={Boxes} label="Activos totales" value={String(activos)} tone="bg-indigo-50 text-indigo-600" />
+        <Stat icon={Boxes} label="Activos totales" value={String(activos)} tone="bg-accent text-accent-foreground" />
         <Stat icon={PackageCheck} label="Disponibles" value={String(disponibles)} tone="bg-emerald-50 text-emerald-600" />
         <Stat icon={AlertTriangle} label="Sanciones activas" value={String(alertasActivas)} tone="bg-red-50 text-red-600" />
         <Stat icon={Users} label="Préstamos activos" value={String(loans.filter((l) => l.estado.toLowerCase() === "activo").length)} tone="bg-sky-50 text-sky-600" />

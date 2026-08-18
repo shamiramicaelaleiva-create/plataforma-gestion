@@ -74,7 +74,7 @@ export function LabShell() {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
-            className="absolute inset-0 bg-slate-950/50"
+            className="absolute inset-0 bg-foreground/40"
             onClick={() => setMobileOpen(false)}
           />
           <div className="absolute left-0 top-0 h-full w-72 shadow-2xl">

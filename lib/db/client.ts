@@ -19,7 +19,10 @@ import * as schema from "./schema"
  */
 const connectionString = process.env.DATABASE_URL
 
-if (!connectionString) {
+// Con USE_MOCK_DATA=1 nunca se abre el socket, así que exigir la cadena de
+// conexión solo impediría levantar la app sin base — justo el caso que el modo
+// mock existe para cubrir.
+if (!connectionString && process.env.USE_MOCK_DATA !== "1") {
   throw new Error(
     "Falta DATABASE_URL. Copiá .env.example a .env.local y completala con la cadena del pooler de Supabase.",
   )
@@ -31,7 +34,7 @@ const globalForDb = globalThis as unknown as {
 
 const sql =
   globalForDb.__labSql ??
-  postgres(connectionString, {
+  postgres(connectionString ?? "postgres://localhost:5432/inexistente", {
     max: process.env.NODE_ENV === "production" ? 1 : 5,
     prepare: false,
     idle_timeout: 20,
