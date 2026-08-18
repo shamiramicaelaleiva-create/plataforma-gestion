@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 
+import { DEMO_MODE } from "@/lib/demo"
 import { updateSession } from "@/lib/supabase/middleware"
 
 /** Rutas accesibles sin sesión. */
@@ -12,8 +13,25 @@ function esRutaPublica(pathname: string) {
 }
 
 export async function middleware(request: NextRequest) {
-  const { supabaseResponse, user } = await updateSession(request)
   const { pathname } = request.nextUrl
+
+  // MODO DEMO: no hay sesión de Supabase que refrescar, así que ni se llama a
+  // updateSession (haría un roundtrip al Auth para nada) y pasa cualquier ruta.
+  // /login y /registro se mandan al inicio: son justo los flujos que están
+  // rotos y no queremos que nadie caiga ahí durante la presentación.
+  if (DEMO_MODE) {
+    if (pathname === "/login" || pathname === "/registro") {
+      const url = request.nextUrl.clone()
+      url.pathname = "/"
+      url.search = ""
+      // Acá no hace falta copiarCookies: sin updateSession no hay cookies de
+      // sesión refrescadas que preservar.
+      return NextResponse.redirect(url)
+    }
+    return NextResponse.next()
+  }
+
+  const { supabaseResponse, user } = await updateSession(request)
 
   // Sin sesión y pidiendo algo protegido -> a /login.
   if (!user && !esRutaPublica(pathname)) {

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { CuentaNoHabilitada } from "@/components/lab/cuenta-no-habilitada"
 import { LabShell } from "@/components/lab/lab-shell"
 import { getAccountState } from "@/lib/auth"
+import { DEMO_MODE } from "@/lib/demo"
 import { getLabSnapshot } from "@/lib/db/queries"
 import { LabProvider } from "@/lib/lab-store"
 
@@ -42,6 +43,7 @@ export default async function Page() {
         legajo: user.legajo,
       }}
       snapshot={snapshot}
+      demoMode={DEMO_MODE}
     >
       <LabShell />
     </LabProvider>
